@@ -1,3 +1,15 @@
+# Local SPT 5.0 / EFT 1.3.0.0.48484 port
+
+Fork: https://github.com/jpeckham/WebOverlay, branch `spt-5.0-eft-1.3.0.0.48484`. Based on upstream `c160e69567f677a101ca1de65c9ed0d5320a6b43` (1.11.0). No public 5.0 port found; examined forks remained BepInEx 5/Mono. This branch targets .NET 10 and BepInXDX IL2CPP, with an injected Unity update pump and preserved overlay API. Original MIT and WebView2 notices remain.
+
+Build: `dotnet build WebOverlay/WebOverlay.csproj -c Release` (`-p:SPTPath=...` overrides the default C: 48484 install). Stages under `Build/BepInEx/plugins/Anvil-WebOverlay`; no automatic install. Copy that directory while the client is closed. No demo or test plugin belongs in production. Windowed/borderless mode is required.
+
+Validation: build succeeded (10 existing compiler/platform warnings); all 12 upstream `channels` probe checks passed. In-client temporary RuntimeChecks verified injected IL2CPP Update and a transparent-configured (not shown) WebView2 page returning a message on Unity's main thread. Test DLL removed afterward. Interactive cursor behavior and raid HUD rendering still require player testing.
+
+See [tests/README.md](tests/README.md) for commands, installation/removal and exact coverage. `tests/RuntimeChecks.csproj` builds the temporary in-client smoke harness. `tools/Probe` is retargeted to .NET 10 Windows and references the exact staged library; run its `channels` mode to repeat the browser messaging checks. The historical Mono instructions/examples below describe upstream and must be adapted to BasePlugin for this branch.
+
+---
+
 # WebOverlay
 
 Show web pages in windows over Escape From Tushonka, so a mod can build its user

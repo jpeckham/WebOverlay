@@ -1,90 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3E5A9C71-8D42-4B16-9F03-2C7E64B18A55}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>WebOverlay</RootNamespace>
-    <AssemblyName>Anvil-WebOverlay</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <LangVersion>latest</LangVersion>
-    <Deterministic>true</Deterministic>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
-    <!-- IntelliSense for consumers: the XML rides next to the DLL in the
-         release zip, so referencing the installed library gives the doc
-         comments too. 1591 stays off - which members carry docs is an
-         editorial decision, not a compiler's. -->
-    <DocumentationFile>bin\$(Configuration)\Anvil-WebOverlay.xml</DocumentationFile>
-    <NoWarn>1591</NoWarn>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <!-- Relative to the working copy: <Install>\Development\WebOverlay\WebOverlay\ -> <Install>.
-         The build then works on any machine regardless of the drive letter.
-         Overridable with /p:SptRoot=... -->
-    <SptRoot Condition="'$(SptRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..</SptRoot>
-    <DeployToSpt Condition="'$(DeployToSpt)' == ''">true</DeployToSpt>
+    <TargetFramework>net10.0</TargetFramework><AssemblyName>Anvil-WebOverlay</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo><LangVersion>latest</LangVersion>
+    <SPTPath Condition="'$(SPTPath)' == ''">C:\sptarkov\SPTarkov 5.0.0-BE-1.3.0.0.48484</SPTPath>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
-      <PrivateAssets>All</PrivateAssets>
-    </PackageReference>
-    <Reference Include="BepInEx">
-      <HintPath>$(SptRoot)\BepInEx\core\BepInEx.dll</HintPath>
-      <Private>false</Private>
+    <Reference Include="BepInEx.Core;BepInEx.Unity.IL2CPP;Il2CppInterop.Runtime;Il2CppInterop.Common">
+      <HintPath>$(SPTPath)/BepInEx/core/%(Identity).dll</HintPath><Private>false</Private>
     </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>$(SptRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <!-- Only for the diagnostics switch: whether Unity sees the mouse move at
-         all is the one question that separates "something drops the input" from
-         "the input never arrives". -->
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>$(SptRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(SptRoot)\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <Reference Include="$(SPTPath)/BepInEx/interop/*.dll"><Private>false</Private></Reference>
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Branding.cs" />
-    <Compile Include="BoundsStore.cs" />
-    <Compile Include="ChannelProtocol.cs" />
-    <Compile Include="ConfigurationManagerAttributes.cs" />
-    <Compile Include="GameCursorBridge.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Interop\ComCallback.cs" />
-    <Compile Include="Interop\DCompApi.cs" />
-    <Compile Include="Interop\WebView2Api.cs" />
-    <Compile Include="OverlayHost.cs" />
-    <Compile Include="OverlayWindow.cs" />
-    <Compile Include="WebOverlays.cs" />
-    <Compile Include="WebOverlayPlugin.cs" />
-  </ItemGroup>
-
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-
-  <Target Name="DeployToSpt" AfterTargets="Build" Condition="'$(DeployToSpt)' == 'true'">
-    <Error Condition="'$(SptRoot)' == ''" Text="Set SptRoot when DeployToSpt=true." />
-    <!-- Only deploy into a real SPT install: a clone outside one must never
-         scatter BepInEx folders into arbitrary parent directories. -->
-    <Message Condition="!Exists('$(SptRoot)\BepInEx\core\BepInEx.dll')" Importance="high"
-             Text="Skipping deploy: $(SptRoot) is not an SPT installation (BepInEx\core\BepInEx.dll not found). Set /p:SptRoot=&lt;your SPT folder&gt;." />
-    <PropertyGroup>
-      <PluginDirectory>$(SptRoot)\BepInEx\plugins\$(AssemblyName)</PluginDirectory>
-    </PropertyGroup>
-    <MakeDir Condition="Exists('$(SptRoot)\BepInEx\core\BepInEx.dll')" Directories="$(PluginDirectory)" />
-    <Copy Condition="Exists('$(SptRoot)\BepInEx\core\BepInEx.dll')" SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDirectory)" />
-    <Copy Condition="Exists('$(SptRoot)\BepInEx\core\BepInEx.dll')" SourceFiles="@(DocFileItem)" DestinationFolder="$(PluginDirectory)" />
-    <Copy Condition="Exists('$(SptRoot)\BepInEx\core\BepInEx.dll')" SourceFiles="..\ThirdParty\WebView2\WebView2Loader.dll" DestinationFolder="$(PluginDirectory)" />
-    <Copy Condition="Exists('$(SptRoot)\BepInEx\core\BepInEx.dll')" SourceFiles="..\ThirdParty\WebView2\WebView2-LICENSE.txt;..\ThirdParty\WebView2\WebView2-NOTICE.txt;..\LICENSE" DestinationFolder="$(PluginDirectory)" />
+  <Target Name="StagePlugin" AfterTargets="Build">
+    <ItemGroup><PackageFiles Include="$(TargetPath);../ThirdParty/WebView2/*;../LICENSE;../README.md" /></ItemGroup>
+    <Copy SourceFiles="@(PackageFiles)" DestinationFolder="../Build/BepInEx/plugins/Anvil-WebOverlay" />
   </Target>
 </Project>

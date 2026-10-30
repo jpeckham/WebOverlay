@@ -4,7 +4,7 @@
        so it targets a modern runtime rather than the net472 the plugin needs. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -16,7 +16,7 @@
     <!-- The built library itself, not a project reference: the probe must run
          against exactly the binary that ships. -->
     <Reference Include="Anvil-WebOverlay">
-      <HintPath>..\..\WebOverlay\bin\Release\Anvil-WebOverlay.dll</HintPath>
+      <HintPath>..\..\WebOverlay\bin\Release\net10.0\Anvil-WebOverlay.dll</HintPath>
     </Reference>
     <!-- The library looks for the loader next to itself, so it has to land in
          the output folder the same way it does in a plugin folder. -->

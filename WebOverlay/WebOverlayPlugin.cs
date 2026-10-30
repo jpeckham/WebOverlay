@@ -1,4 +1,6 @@
 using BepInEx;
+using BepInEx.Unity.IL2CPP;
+using KeyboardShortcut = BepInEx.Unity.IL2CPP.Configuration.KeyboardShortcut;
 using BepInEx.Configuration;
 using System;
 using System.Collections.Generic;
@@ -14,7 +16,7 @@ namespace WebOverlay
     /// the game window and the overlay thread are found and shut down once.
     /// </summary>
     [BepInPlugin(Branding.PluginGuid, Branding.PluginName, Branding.PluginVersion)]
-    public class WebOverlayPlugin : BaseUnityPlugin
+    public class WebOverlayPlugin : BasePlugin
     {
         /// <summary>
         /// Off by default: it is a tool for answering one specific kind of
@@ -23,6 +25,15 @@ namespace WebOverlay
         /// the OS has in front.
         /// </summary>
         internal static ConfigEntry<bool> DiagnoseCursor;
+        internal static WebOverlayPlugin Instance;
+        private OverlayPump pump;
+        private bool stopped;
+        public override bool Unload()
+        {
+            Shutdown();
+            if (pump != null) UnityEngine.Object.Destroy(pump);
+            return true;
+        }
 
         /// <summary>
         /// Off by default like its neighbour, and for the same reason: it
@@ -30,8 +41,10 @@ namespace WebOverlay
         /// </summary>
         internal static ConfigEntry<bool> DiagnosePage;
 
-        private void Awake()
+        public override void Load()
         {
+            Instance = this;
+            pump = AddComponent<OverlayPump>();
             // Behind Advanced: this answers one kind of bug report and is of no
             // use to a player, and the section is the only thing this library
             // puts in the settings menu - so an ordinary player now sees
@@ -73,8 +86,8 @@ namespace WebOverlay
                 OverlayHost.DiagnosePage = DiagnosePage.Value;
                 OverlayHost.ResetPageDiagnostics();
             };
-            OverlayHost.LogInfo = this.Logger.LogInfo;
-            OverlayHost.LogWarning = this.Logger.LogWarning;
+            OverlayHost.LogInfo = Log.LogInfo;
+            OverlayHost.LogWarning = Log.LogWarning;
             OverlayHost.GameWindow = findGameWindow();
             // This component's Update is the main thread, so from here on
             // overlays created with DispatchOnMainThread can be served.
@@ -98,9 +111,9 @@ namespace WebOverlay
                 !Cursor.visible || Cursor.lockState == CursorLockMode.Locked;
 
             if (OverlayHost.GameWindow == IntPtr.Zero)
-                this.Logger.LogWarning("the game window was not found; overlays will be unparented.");
+                Log.LogWarning("the game window was not found; overlays will be unparented.");
 
-            this.Logger.LogInfo(Branding.PluginName + " " + Branding.PluginVersion + " ready.");
+            Log.LogInfo(Branding.PluginName + " " + Branding.PluginVersion + " ready.");
         }
 
         /// <summary>
@@ -108,7 +121,7 @@ namespace WebOverlay
         /// dispatch. Nothing is queued unless a mod opted in, so this is an
         /// empty dequeue attempt per frame otherwise.
         /// </summary>
-        private void Update()
+        internal void Tick()
         {
             // Read where Unity allows it, answered wherever it is asked.
             displayModeSupported = Screen.fullScreenMode != FullScreenMode.ExclusiveFullScreen;
@@ -126,7 +139,7 @@ namespace WebOverlay
         /// the game keeps setting it back; asking the game for the cursor is a
         /// state change and needs no second call per frame.
         /// </summary>
-        private void LateUpdate()
+        internal void LateTick()
         {
             freeCursorIfWanted(OverlayHost.WantsFreeCursor());
         }
@@ -250,7 +263,7 @@ namespace WebOverlay
                 return;
             }
             lastCursorLogAt = now;
-            Logger.LogInfo("cursor: " + state + (skippedCursorLines > 0
+            Log.LogInfo("cursor: " + state + (skippedCursorLines > 0
                 ? " (+" + skippedCursorLines + " changes in the last second)"
                 : string.Empty));
             skippedCursorLines = 0;
@@ -338,7 +351,7 @@ namespace WebOverlay
             if (!warnedAboutCursorReturn)
             {
                 warnedAboutCursorReturn = true;
-                Logger.LogWarning("the cursor was left hidden but not captured after handing it back"
+                Log.LogWarning("the cursor was left hidden but not captured after handing it back"
                     + " (lock mode was " + found + "); the game keeps the mouse now.");
             }
         }
@@ -353,8 +366,10 @@ namespace WebOverlay
         // Update and LateUpdate both call in, so this is a handful of frames.
         private const int ReturnChecks = 8;
 
-        private void OnDestroy()
+        internal void Shutdown()
         {
+            if (stopped) return;
+            stopped = true;
             // Give the cursor back before going away, or the game keeps
             // showing one because of an overlay that no longer exists.
             if (askedGameForCursor)
@@ -376,6 +391,7 @@ namespace WebOverlay
             OverlayHost.CursorCapturedProbe = null;
             OverlayHost.DiagnosePage = false;
             OverlayHost.Shutdown();
+            if (ReferenceEquals(Instance, this)) Instance = null;
         }
 
         /// <summary>
